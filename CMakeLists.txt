@@ -10,6 +10,8 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 find_package(Vulkan REQUIRED FATAL_ERROR)
 
+add_subdirectory(examples)
+
 add_library(vk_wrapper src/Core.cpp src/Core.h)
 
 target_include_directories(vk_wrapper PUBLIC src)
