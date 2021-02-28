@@ -16,4 +16,4 @@ add_library(vk_wrapper src/Core.cpp src/Core.h)
 
 target_include_directories(vk_wrapper PUBLIC src)
 
-target_link_libraries(vk_wrapper PUBLIC Vulkan)
+target_link_libraries(vk_wrapper PUBLIC Vulkan::Vulkan)
