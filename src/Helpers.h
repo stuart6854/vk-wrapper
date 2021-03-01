@@ -19,23 +19,25 @@ namespace vkm
 
     auto CheckExtensionSupport(const char* extensionName) -> bool;
 
-    struct QueueFamily
+    struct Queue
     {
+        vk::QueueFlagBits flag;
         uint32_t familyIndex = VK_QUEUE_FAMILY_IGNORED;
-        uint32_t queueCount;
-        vk::QueueFlags flags;
+        uint32_t queueIndex = 0;
 
         auto IsValid() const { return familyIndex != VK_QUEUE_FAMILY_IGNORED; }
-        auto IsGraphics() const -> bool { return (flags & vk::QueueFlagBits::eGraphics) == vk::QueueFlagBits::eGraphics; };
-        auto IsCompute() const -> bool { return (flags & vk::QueueFlagBits::eCompute) == vk::QueueFlagBits::eCompute; };
-        auto IsTransfer() const -> bool { return (flags & vk::QueueFlagBits::eTransfer) == vk::QueueFlagBits::eTransfer; };
+        auto IsGraphics() const -> bool { return flag == vk::QueueFlagBits::eGraphics; };
+        auto IsCompute() const -> bool { return flag == vk::QueueFlagBits::eCompute; };
+        auto IsTransfer() const -> bool { return flag == vk::QueueFlagBits::eTransfer; };
     };
 
     struct QueueFamilies
     {
-        QueueFamily graphics;
-        QueueFamily compute;
-        QueueFamily transfer;
+        Queue graphics;
+        Queue compute;
+        Queue transfer;
+
+        std::vector<vk::DeviceCreateInfo> queueInfo;
     };
 
     auto PickQueueFamilies(vk::PhysicalDevice physicalDevice) -> QueueFamilies;
@@ -43,9 +45,9 @@ namespace vkm
     auto GetQueueCreateInfos(const QueueFamilies& families) -> std::vector<vk::DeviceQueueCreateInfo>;
 
     VKAPI_ATTR auto VKAPI_CALL debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
-                                                    VkDebugUtilsMessageTypeFlagsEXT messageType,
-                                                    const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
-                                                    void* pUserData) -> VkBool32;
+                                             VkDebugUtilsMessageTypeFlagsEXT messageType,
+                                             const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
+                                             void* pUserData) -> VkBool32;
 
 }  // namespace vkm
 

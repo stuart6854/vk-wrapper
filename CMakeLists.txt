@@ -12,7 +12,7 @@ find_package(Vulkan REQUIRED FATAL_ERROR)
 
 add_subdirectory(examples)
 
-add_library(vk_wrapper src/Core.cpp src/Core.h src/Context.cpp src/Context.h src/DeletionQueue.h src/Helpers.cpp src/Helpers.h)
+add_library(vk_wrapper src/Core.cpp src/Core.h src/Context.cpp src/Context.h src/DeletionQueue.h src/Helpers.cpp src/Helpers.h src/CommandBuffer.cpp src/CommandBuffer.h)
 
 target_include_directories(vk_wrapper PUBLIC src)
 

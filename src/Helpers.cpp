@@ -41,7 +41,30 @@ namespace vkm
         // Handle single queue family case
         if (queueProperties.size() == 1)
         {
-            families.graphics = families.transfer = families.transfer = { 0, queueProperties[0].queueCount, queueProperties[0].queueFlags };
+            auto queueProps = queueProperties[0];
+
+            Queue queue{};
+            queue.familyIndex = 0;
+
+            if ((queueProps.queueFlags & vk::QueueFlagBits::eGraphics) == vk::QueueFlagBits::eGraphics)
+            {
+                queue.flag = vk::QueueFlagBits::eGraphics;
+                queue.familyIndex++;
+                families.graphics = queue;
+            }
+            if ((queueProps.queueFlags & vk::QueueFlagBits::eCompute) == vk::QueueFlagBits::eCompute)
+            {
+                queue.flag = vk::QueueFlagBits::eCompute;
+                queue.familyIndex++;
+                families.graphics = queue;
+            }
+            if ((queueProps.queueFlags & vk::QueueFlagBits::eTransfer) == vk::QueueFlagBits::eTransfer)
+            {
+                queue.flag = vk::QueueFlagBits::eTransfer;
+                queue.familyIndex++;
+                families.graphics = queue;
+            }
+
             return families;
         }
 
@@ -52,7 +75,7 @@ namespace vkm
             if ((family.queueFlags & vk::QueueFlagBits::eTransfer) && !(family.queueFlags & vk::QueueFlagBits::eGraphics) &&
                 !(family.queueFlags & vk::QueueFlagBits::eCompute))
             {
-                families.transfer = { i, family.queueCount, family.queueFlags };
+                families.transfer = { vk::QueueFlagBits::eTransfer, i, family.queueCount };
                 break;
             }
         }
@@ -63,7 +86,7 @@ namespace vkm
             auto& family = queueProperties[i];
             if ((family.queueFlags & vk::QueueFlagBits::eGraphics) && !(family.queueFlags & vk::QueueFlagBits::eCompute))
             {
-                families.transfer = { i, family.queueCount, family.queueFlags };
+                families.graphics = { vk::QueueFlagBits::eGraphics, i, family.queueCount };
                 break;
             }
         }
@@ -74,13 +97,12 @@ namespace vkm
             auto& family = queueProperties[i];
             if ((family.queueFlags & vk::QueueFlagBits::eCompute) && !(family.queueFlags & vk::QueueFlagBits::eGraphics))
             {
-                families.transfer = { i, family.queueCount, family.queueFlags };
+                families.compute = { vk::QueueFlagBits::eCompute, i, family.queueCount };
                 break;
             }
         }
 
-        // Find first queue family that supports the requested flags,
-        // for other queue types or if no dedicated queue types were found
+        // If dedicated queues were not found, find the first queue available
         for (uint32_t i = 0; i < queueProperties.size(); i++)
         {
             auto& family = queueProperties[i];
@@ -88,24 +110,38 @@ namespace vkm
             {
                 if (family.queueFlags & vk::QueueFlagBits::eTransfer)
                 {
-                    families.transfer = { i, family.queueCount, family.queueFlags };
+                    families.transfer = { vk::QueueFlagBits::eTransfer, i, family.queueCount };
                 }
             }
             if (!families.graphics.IsValid())
             {
                 if (family.queueFlags & vk::QueueFlagBits::eGraphics)
                 {
-                    families.graphics = { i, family.queueCount, family.queueFlags };
+                    families.graphics = { vk::QueueFlagBits::eGraphics, i, family.queueCount };
                 }
             }
             if (!families.compute.IsValid())
             {
                 if (family.queueFlags & vk::QueueFlagBits::eCompute)
                 {
-                    families.compute = { i, family.queueCount, family.queueFlags };
+                    families.compute = { vk::QueueFlagBits::eCompute, i, family.queueCount };
                 }
             }
         }
+
+        if (families.compute.familyIndex == families.graphics.familyIndex)
+        {
+            families.compute.queueIndex = families.graphics.queueIndex + 1;
+        }
+        if (families.transfer.familyIndex == families.graphics.familyIndex)
+        {
+            families.transfer.queueIndex = families.graphics.queueIndex + 1;
+        }
+        else if (families.transfer.familyIndex == families.compute.familyIndex)
+        {
+            families.transfer.queueIndex = families.compute.queueIndex + 1;
+        }
+
         return families;
     }
 

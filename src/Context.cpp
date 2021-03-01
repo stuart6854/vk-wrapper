@@ -19,6 +19,10 @@ namespace vkm
         PickPhysicalDevice();
         CreateDevice(deviceInfo);
 
+        m_cmdPoolGraphics = CreateCommandPool(m_queueFamilies.graphics.familyIndex);
+        m_cmdPoolCompute = CreateCommandPool(m_queueFamilies.graphics.familyIndex);
+        m_cmdPoolTransfer = CreateCommandPool(m_queueFamilies.graphics.familyIndex);
+
         return true;
     }
 
@@ -30,6 +34,26 @@ namespace vkm
 
         return false;
     }
+
+    auto Context::AllocateCmdBuffers(int count, vk::CommandBufferLevel level) -> std::vector<CommandBuffer>
+    {
+        vk::CommandBufferAllocateInfo info{};
+        info.setCommandPool(m_cmdPoolGraphics);
+        info.setCommandBufferCount(count);
+        info.setLevel(level);
+
+        auto allocatedBuffers = m_device.allocateCommandBuffers(info);
+
+        std::vector<CommandBuffer> cmdBuffers;
+        cmdBuffers.resize(count);
+        for (int i = 0; i < count; i++)
+        {
+            cmdBuffers[i] = { allocatedBuffers[i] };
+        }
+        return cmdBuffers;
+    }
+
+    auto Context::AllocateCmdBuffer(vk::CommandBufferLevel level) -> CommandBuffer { return AllocateCmdBuffers(1, level)[0]; }
 
     void Context::CreateInstance(const InstanceInfo& info, bool useValidation)
     {
@@ -96,15 +120,26 @@ namespace vkm
     {
         auto queueProperties = m_physicalDevice.getQueueFamilyProperties();
 
-        m_queueFamilies = PickQueueFamilies(m_physicalDevice);
-        std::vector<vk::DeviceQueueCreateInfo> queueInfos(2);
-        queueInfos[0].setQueueFamilyIndex(m_queueFamilies.graphics.familyIndex);
-        queueInfos[0].setQueueCount(1);
-        queueInfos[0].pQueuePriorities = &graphicsQueuePriority;
+        static const float graphicsQueuePriority = 0.5f;
+        static const float computeQueuePriority = 0.5f;
+        static const float transferQueuePriority = 1.0f;
 
-        queueInfos[1].setQueueFamilyIndex(m_queueFamilies.transfer.familyIndex);
-        queueInfos[1].setQueueCount(1);
-        queueInfos[1].pQueuePriorities = &transferQueuePriority;
+        std::vector<float> priorities = { graphicsQueuePriority, computeQueuePriority, transferQueuePriority };
+
+        m_queueFamilies = PickQueueFamilies(m_physicalDevice);
+        //        auto queueInfos = GetQueueCreateInfos(m_queueFamilies, &graphicsQueuePriority, &computeQueuePriority, &transferQueuePriority);
+        std::vector<vk::DeviceQueueCreateInfo> queueInfos(1);
+        queueInfos[0].setQueueFamilyIndex(m_queueFamilies.graphics.familyIndex);
+        queueInfos[0].setQueueCount(3);
+        queueInfos[0].setQueuePriorities(priorities);
+
+        //        queueInfos[1].setQueueFamilyIndex(m_queueFamilies.compute.familyIndex);
+        //        queueInfos[1].setQueueCount(1);
+        //        queueInfos[1].pQueuePriorities = &computeQueuePriority;
+        //
+        //        queueInfos[2].setQueueFamilyIndex(m_queueFamilies.transfer.familyIndex);
+        //        queueInfos[2].setQueueCount(1);
+        //        queueInfos[2].pQueuePriorities = &transferQueuePriority;
 
         vk::DeviceCreateInfo createInfo{};
         createInfo.setPEnabledExtensionNames(info.requiredExtensions);
@@ -114,8 +149,9 @@ namespace vkm
         m_device = m_physicalDevice.createDevice(createInfo);
         m_deletionQueue.PushDeleter([=]() { m_device.destroy(); });
 
-        m_graphicsQueue = m_device.getQueue(m_queueFamilies.graphics.familyIndex, 0);
-        m_transferQueue = m_device.getQueue(m_queueFamilies.transfer.familyIndex, 0);
+        m_queueGraphics = m_device.getQueue(m_queueFamilies.graphics.familyIndex, 0);
+        m_queueCompute = m_device.getQueue(m_queueFamilies.graphics.familyIndex, 1);
+        m_queueTransfer = m_device.getQueue(m_queueFamilies.graphics.familyIndex, 2);
     }
 
     void Context::CreateDebugMessenger()
@@ -131,6 +167,18 @@ namespace vkm
 
         m_debugMessenger = m_instance.createDebugUtilsMessengerEXT(createInfo, nullptr, dispatcher);
         m_deletionQueue.PushDeleter([=]() { m_instance.destroy(m_debugMessenger, nullptr, dispatcher); });
+    }
+
+    auto Context::CreateCommandPool(uint32_t familyIndex) -> vk::CommandPool
+    {
+        vk::CommandPoolCreateInfo info{};
+        info.setQueueFamilyIndex(familyIndex);
+        info.setFlags(vk::CommandPoolCreateFlagBits::eResetCommandBuffer);
+
+        auto pool = m_device.createCommandPool(info);
+        m_deletionQueue.PushDeleter([=]() { m_device.destroy(pool); });
+
+        return pool;
     }
 
 }  // namespace vkm
