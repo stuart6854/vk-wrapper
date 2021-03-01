@@ -74,7 +74,7 @@ namespace vkm
     void Context::CreateDebugMessenger()
     {
         vk::DebugUtilsMessengerCreateInfoEXT createInfo{};
-        createInfo.setMessageSeverity(vk::DebugUtilsMessageSeverityFlagBitsEXT::eVerbose | vk::DebugUtilsMessageSeverityFlagBitsEXT::eWarning |
+        createInfo.setMessageSeverity(/*vk::DebugUtilsMessageSeverityFlagBitsEXT::eVerbose |*/ vk::DebugUtilsMessageSeverityFlagBitsEXT::eWarning |
                                       vk::DebugUtilsMessageSeverityFlagBitsEXT::eError);
         createInfo.setMessageType(vk::DebugUtilsMessageTypeFlagBitsEXT::eGeneral | vk::DebugUtilsMessageTypeFlagBitsEXT::eValidation |
                                   vk::DebugUtilsMessageTypeFlagBitsEXT::ePerformance);
