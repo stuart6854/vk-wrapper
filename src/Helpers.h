@@ -11,41 +11,41 @@
 
 namespace vkm
 {
-    auto CheckLayerSupport(const char* layerName) -> bool
-    {
-        auto layers = vk::enumerateInstanceLayerProperties();
-        for (const auto& layer : layers)
-        {
-            if (std::strcmp(layer.layerName, layerName) == 0)
-            {
-                return true;
-            }
-        }
-        return false;
-    }
+    static const float graphicsQueuePriority = 0.5f;
+    static const float computeQueuePriority = 0.5f;
+    static const float transferQueuePriority = 1.0f;
 
-    auto CheckExtensionSupport(const char* extensionName) -> bool
-    {
-        auto extensions = vk::enumerateInstanceExtensionProperties();
-        for (const auto& extension : extensions)
-        {
-            if (std::strcmp(extension.extensionName, extensionName) == 0)
-            {
-                return true;
-            }
-        }
-        return false;
-    }
+    auto CheckLayerSupport(const char* layerName) -> bool;
 
-    static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
-                                                        VkDebugUtilsMessageTypeFlagsEXT messageType,
-                                                        const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
-                                                        void* pUserData)
-    {
-        std::cerr << "[Vulkan Validation] " << pCallbackData->pMessage << std::endl;
+    auto CheckExtensionSupport(const char* extensionName) -> bool;
 
-        return VK_FALSE;
-    }
+    struct QueueFamily
+    {
+        uint32_t familyIndex = VK_QUEUE_FAMILY_IGNORED;
+        uint32_t queueCount;
+        vk::QueueFlags flags;
+
+        auto IsValid() const { return familyIndex != VK_QUEUE_FAMILY_IGNORED; }
+        auto IsGraphics() const -> bool { return (flags & vk::QueueFlagBits::eGraphics) == vk::QueueFlagBits::eGraphics; };
+        auto IsCompute() const -> bool { return (flags & vk::QueueFlagBits::eCompute) == vk::QueueFlagBits::eCompute; };
+        auto IsTransfer() const -> bool { return (flags & vk::QueueFlagBits::eTransfer) == vk::QueueFlagBits::eTransfer; };
+    };
+
+    struct QueueFamilies
+    {
+        QueueFamily graphics;
+        QueueFamily compute;
+        QueueFamily transfer;
+    };
+
+    auto PickQueueFamilies(vk::PhysicalDevice physicalDevice) -> QueueFamilies;
+
+    auto GetQueueCreateInfos(const QueueFamilies& families) -> std::vector<vk::DeviceQueueCreateInfo>;
+
+    VKAPI_ATTR auto VKAPI_CALL debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
+                                                    VkDebugUtilsMessageTypeFlagsEXT messageType,
+                                                    const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
+                                                    void* pUserData) -> VkBool32;
 
 }  // namespace vkm
 

@@ -6,6 +6,7 @@
 #define VK_WRAPPER_CONTEXT_H
 
 #include "DeletionQueue.h"
+#include "Helpers.h"
 
 #include <vulkan/vulkan.hpp>
 
@@ -36,12 +37,26 @@ namespace vkm
         APIVersion apiVersion;
     };
 
+    struct InstanceInfo
+    {
+        AppInfo appInfo{};
+        std::vector<const char*> requiredExtensions{};
+    };
+
+    struct DeviceInfo
+    {
+        std::vector<const char*> requiredExtensions{};
+        const vk::PhysicalDeviceFeatures& enabledFeatures{};
+    };
+
     class Context
     {
     public:
-        Context(AppInfo appInfo = {}, bool useValidation = true, std::vector<const char*> requiredExts = {}, std::vector<const char*> requiredDeviceExts = {});
-        Context(vk::Instance instance, vk::PhysicalDevice physicalDevice, vk::Device device);
+        Context() = default;
         ~Context();
+
+        auto Init(const InstanceInfo& instanceInfo = {}, const DeviceInfo& deviceInfo = {}, bool useValidation = true) -> bool;
+        auto Init(vk::Instance instance, vk::PhysicalDevice physicalDevice, vk::Device device) -> bool;
 
         auto DeletionQueue() -> DeletionQueue& { return m_deletionQueue; }
 
@@ -58,9 +73,13 @@ namespace vkm
 
         vk::DebugUtilsMessengerEXT m_debugMessenger;
 
-        void CreateInstance(const AppInfo& appInfo, bool useValidation, std::vector<const char*> requiredInstanceExts);
+        QueueFamilies m_queueFamilies;
+        vk::Queue m_graphicsQueue;
+        vk::Queue m_transferQueue;
+
+        void CreateInstance(const InstanceInfo& info, bool useValidation);
         void PickPhysicalDevice();
-        void CreateDevice(std::vector<const char*> requiredDeviceExts);
+        void CreateDevice(const DeviceInfo& info);
 
         void CreateDebugMessenger();
     };

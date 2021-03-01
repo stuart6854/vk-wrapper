@@ -4,24 +4,8 @@
 
 #include "Context.h"
 
-#include <utility>
-
-#include "Helpers.h"
-
 namespace vkm
 {
-    Context::Context(AppInfo appInfo, bool useValidation, std::vector<const char*> requiredExts, std::vector<const char*> requiredDeviceExts)
-    {
-        CreateInstance(appInfo, useValidation, std::move(requiredExts));
-        PickPhysicalDevice();
-        CreateDevice(std::move(requiredDeviceExts));
-    }
-
-    Context::Context(vk::Instance instance, vk::PhysicalDevice physicalDevice, vk::Device device)
-        : m_instance(instance), m_physicalDevice(physicalDevice), m_device(device)
-    {
-    }
-
     Context::~Context()
     {
         // Make sure the GPU has stopped doing things
@@ -29,17 +13,35 @@ namespace vkm
         m_deletionQueue.Flush();
     }
 
-    void Context::CreateInstance(const AppInfo& appInfo, bool useValidation, std::vector<const char*> requiredInstanceExts)
+    auto Context::Init(const InstanceInfo& instanceInfo, const DeviceInfo& deviceInfo, bool useValidation) -> bool
     {
-        vk::ApplicationInfo info{};
-        info.setPApplicationName(appInfo.appName.c_str());
-        info.setPEngineName(appInfo.engineName.c_str());
-        info.setApplicationVersion(appInfo.appVersion);
-        info.setEngineVersion(appInfo.engineVersion);
-        info.setApiVersion(appInfo.apiVersion);
+        CreateInstance(instanceInfo, useValidation);
+        PickPhysicalDevice();
+        CreateDevice(deviceInfo);
+
+        return true;
+    }
+
+    auto Context::Init(vk::Instance instance, vk::PhysicalDevice physicalDevice, vk::Device device) -> bool
+    {
+        m_instance = instance;
+        m_physicalDevice = physicalDevice;
+        m_device = device;
+
+        return false;
+    }
+
+    void Context::CreateInstance(const InstanceInfo& info, bool useValidation)
+    {
+        vk::ApplicationInfo appInfo{};
+        appInfo.setPApplicationName(info.appInfo.appName.c_str());
+        appInfo.setPEngineName(info.appInfo.engineName.c_str());
+        appInfo.setApplicationVersion(info.appInfo.appVersion);
+        appInfo.setEngineVersion(info.appInfo.engineVersion);
+        appInfo.setApiVersion(info.appInfo.apiVersion);
 
         std::vector<const char*> layers;
-        std::vector<const char*> extensions = std::move(requiredInstanceExts);
+        std::vector<const char*> extensions = info.requiredExtensions;
         if (useValidation)
         {
             const char* validationLayerName = "VK_LAYER_KHRONOS_validation";
@@ -54,7 +56,7 @@ namespace vkm
         }
 
         vk::InstanceCreateInfo createInfo{};
-        createInfo.setPApplicationInfo(&info);
+        createInfo.setPApplicationInfo(&appInfo);
         createInfo.setPEnabledLayerNames(layers);
         createInfo.setPEnabledExtensionNames(extensions);
 
@@ -67,9 +69,54 @@ namespace vkm
         }
     }
 
-    void Context::PickPhysicalDevice() {}
+    void Context::PickPhysicalDevice()
+    {
+        auto possibleGPUs = m_instance.enumeratePhysicalDevices();
 
-    void Context::CreateDevice(std::vector<const char*> requiredDeviceExts) {}
+        // TODO: Score all possible GPUs and pick one with best score
+
+        // Right now we just pick any Discrete gpu, if available
+        for (const auto& gpu : possibleGPUs)
+        {
+            auto properties = gpu.getProperties();
+            if (properties.deviceType == vk::PhysicalDeviceType::eDiscreteGpu)
+            {
+                m_physicalDevice = gpu;
+            }
+        }
+
+        // If there are no Discrete GPUs, just pick the first GPU
+        if (!m_physicalDevice)
+        {
+            m_physicalDevice = possibleGPUs[0];
+        }
+    }
+
+    void Context::CreateDevice(const DeviceInfo& info)
+    {
+        auto queueProperties = m_physicalDevice.getQueueFamilyProperties();
+
+        m_queueFamilies = PickQueueFamilies(m_physicalDevice);
+        std::vector<vk::DeviceQueueCreateInfo> queueInfos(2);
+        queueInfos[0].setQueueFamilyIndex(m_queueFamilies.graphics.familyIndex);
+        queueInfos[0].setQueueCount(1);
+        queueInfos[0].pQueuePriorities = &graphicsQueuePriority;
+
+        queueInfos[1].setQueueFamilyIndex(m_queueFamilies.transfer.familyIndex);
+        queueInfos[1].setQueueCount(1);
+        queueInfos[1].pQueuePriorities = &transferQueuePriority;
+
+        vk::DeviceCreateInfo createInfo{};
+        createInfo.setPEnabledExtensionNames(info.requiredExtensions);
+        createInfo.setPEnabledFeatures(&info.enabledFeatures);
+        createInfo.setQueueCreateInfos(queueInfos);
+
+        m_device = m_physicalDevice.createDevice(createInfo);
+        m_deletionQueue.PushDeleter([=]() { m_device.destroy(); });
+
+        m_graphicsQueue = m_device.getQueue(m_queueFamilies.graphics.familyIndex, 0);
+        m_transferQueue = m_device.getQueue(m_queueFamilies.transfer.familyIndex, 0);
+    }
 
     void Context::CreateDebugMessenger()
     {
