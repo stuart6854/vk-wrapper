@@ -3,6 +3,7 @@
 //
 
 #include "Context.h"
+#include "Device.h"
 
 #include <iostream>
 
@@ -13,6 +14,8 @@ auto main() -> int
     {
         std::cerr << "Failed to init Context!" << std::endl;
     }
+
+    vkm::Device device(ctx);
 
     auto cmd = ctx.AllocateCmdBuffer();
 
@@ -27,8 +30,6 @@ auto main() -> int
     //    cmd.Submit(ctx.ComputeQueue());
     //
     //    ctx.ComputeQueue().waitIdle();
-
-    //    vkm::Device device(ctx);
 
     return 0;
 }
