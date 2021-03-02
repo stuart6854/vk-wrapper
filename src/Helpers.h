@@ -49,6 +49,12 @@ namespace vkm
                                              const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
                                              void* pUserData) -> VkBool32;
 
+    auto ChooseSurfaceFormat(vk::PhysicalDevice physicalDevice, vk::SurfaceKHR surface) -> vk::SurfaceFormatKHR;
+
+    auto ChoosePresentMode(vk::PhysicalDevice physicalDevice, vk::SurfaceKHR surface, uint8_t vsync) -> vk::PresentModeKHR;
+
+    auto ChooseExtent(vk::PhysicalDevice physicalDevice, vk::SurfaceKHR surface, uint32_t width, uint32_t height) -> vk::Extent2D;
+
 }  // namespace vkm
 
 #endif  // VK_WRAPPER_HELPERS_H

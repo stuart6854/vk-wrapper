@@ -71,4 +71,6 @@ namespace vkm
         queue.submit(info);
     }
 
+    void CommandBuffer::Reset() { m_cmd.reset(); }
+
 }  // namespace vkm

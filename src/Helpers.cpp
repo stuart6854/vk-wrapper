@@ -229,4 +229,60 @@ namespace vkm
 
         return VK_FALSE;
     }
+
+    auto ChooseSurfaceFormat(vk::PhysicalDevice physicalDevice, vk::SurfaceKHR surface) -> vk::SurfaceFormatKHR
+    {
+        auto surfaceFormats = physicalDevice.getSurfaceFormatsKHR(surface);
+
+        for (const auto& format : surfaceFormats)
+        {
+            if (format.format == vk::Format::eB8G8R8A8Srgb && format.colorSpace == vk::ColorSpaceKHR::eSrgbNonlinear)
+            {
+                return format;
+            }
+        }
+        return surfaceFormats[0];
+    }
+
+    auto ChoosePresentMode(vk::PhysicalDevice physicalDevice, vk::SurfaceKHR surface, uint8_t vsync) -> vk::PresentModeKHR
+    {
+        if (vsync > 2)
+        {
+            vsync = 2;
+        }
+
+        if (vsync == 2)
+        {
+            // Double buffering
+            return vk::PresentModeKHR::eFifo;
+        }
+        if (vsync == 1)
+        {
+            // Triple buffering
+            return vk::PresentModeKHR::eMailbox;
+        }
+
+        // No vsync
+        return vk::PresentModeKHR::eImmediate;
+    }
+
+    auto ChooseExtent(vk::PhysicalDevice physicalDevice, vk::SurfaceKHR surface, uint32_t width, uint32_t height) -> vk::Extent2D
+    {
+        auto capabilities = physicalDevice.getSurfaceCapabilitiesKHR(surface);
+
+        if (capabilities.currentExtent.width != UINT32_MAX)
+        {
+            return capabilities.currentExtent;
+        }
+
+        vk::Extent2D actualExtent = { width, height };
+
+        // Use Min/Max to clamp the values between the allowed minimum and
+        // maximum extents that are supported
+        actualExtent.width = std::clamp(actualExtent.width, capabilities.minImageExtent.width, capabilities.maxImageExtent.width);
+        actualExtent.height = std::clamp(actualExtent.height, capabilities.minImageExtent.height, capabilities.maxImageExtent.height);
+
+        return actualExtent;
+    }
+
 }  // namespace vkm

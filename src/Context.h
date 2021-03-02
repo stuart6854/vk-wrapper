@@ -49,7 +49,7 @@ namespace vkm
     struct DeviceInfo
     {
         std::vector<const char*> requiredExtensions{};
-        const vk::PhysicalDeviceFeatures& enabledFeatures{};
+        vk::PhysicalDeviceFeatures enabledFeatures{};
     };
 
     class Context
@@ -71,8 +71,14 @@ namespace vkm
         auto ComputeQueue() const -> const vk::Queue& { return m_queueCompute; }
         auto TransferQueue() const -> const vk::Queue& { return m_queueTransfer; }
 
+        void DeviceWaitIdle();
+        void WaitForFence(vk::Fence fence);
+        void ResetFence(vk::Fence fence);
+
         auto AllocateCmdBuffers(int count, vk::CommandBufferLevel level = vk::CommandBufferLevel::ePrimary) -> std::vector<CommandBuffer>;
         auto AllocateCmdBuffer(vk::CommandBufferLevel level = vk::CommandBufferLevel::ePrimary) -> CommandBuffer;
+
+        void DeallocateCmdBuffer(vk::CommandBuffer cmd);
 
     private:
         struct DeletionQueue m_deletionQueue;

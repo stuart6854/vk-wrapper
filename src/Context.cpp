@@ -35,6 +35,12 @@ namespace vkm
         return false;
     }
 
+    void Context::DeviceWaitIdle() { m_device.waitIdle(); }
+
+    void Context::WaitForFence(vk::Fence fence) { m_device.waitForFences(fence, VK_TRUE, UINT64_MAX); }
+
+    void Context::ResetFence(vk::Fence fence) { m_device.resetFences(fence); }
+
     auto Context::AllocateCmdBuffers(int count, vk::CommandBufferLevel level) -> std::vector<CommandBuffer>
     {
         vk::CommandBufferAllocateInfo info{};
@@ -54,6 +60,8 @@ namespace vkm
     }
 
     auto Context::AllocateCmdBuffer(vk::CommandBufferLevel level) -> CommandBuffer { return AllocateCmdBuffers(1, level)[0]; }
+
+    void Context::DeallocateCmdBuffer(vk::CommandBuffer cmd) { m_device.free(m_cmdPoolGraphics, cmd); }
 
     void Context::CreateInstance(const InstanceInfo& info, bool useValidation)
     {

@@ -28,6 +28,10 @@ namespace vkm
 
         void Submit(vk::Queue queue);
 
+        void Reset();
+
+        operator vk::CommandBuffer() const { return m_cmd; }
+
     private:
         vk::CommandBuffer m_cmd;
         bool m_hasBegun = false;

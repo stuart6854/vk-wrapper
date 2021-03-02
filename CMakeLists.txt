@@ -9,10 +9,11 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 find_package(Vulkan REQUIRED FATAL_ERROR)
+add_subdirectory(dependencies)
 
 add_subdirectory(examples)
 
-add_library(vk_wrapper src/Core.cpp src/Core.h src/Context.cpp src/Context.h src/DeletionQueue.h src/Helpers.cpp src/Helpers.h src/CommandBuffer.cpp src/CommandBuffer.h src/vk_mem_alloc.h src/Device.cpp src/Device.h src/Resources.h)
+add_library(vk_wrapper src/Core.cpp src/Core.h src/Context.cpp src/Context.h src/DeletionQueue.h src/Helpers.cpp src/Helpers.h src/CommandBuffer.cpp src/CommandBuffer.h src/vk_mem_alloc.h src/Device.cpp src/Device.h src/Resources.h src/Swapchain.cpp src/Swapchain.h src/Window.h)
 
 target_include_directories(vk_wrapper PUBLIC src)
 
