@@ -17,6 +17,9 @@ auto main() -> int
 
     vkm::Device device(ctx);
 
+    float data[4] = { 1.0f, 2.0f, 4.0f, 8.0f };
+    auto buffer = device.CreateBuffer(4 * sizeof(float), vk::BufferUsageFlagBits::eUniformBuffer, VMA_MEMORY_USAGE_CPU_ONLY, data);
+
     auto cmd = ctx.AllocateCmdBuffer();
 
     //    cmd.Begin(vk::CommandBufferUsageFlagBits::eOneTimeSubmit);
